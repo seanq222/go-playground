@@ -17,6 +17,8 @@ import (
 	"math/rand"
 	"time"
 
+	"gonum.org/v1/gonum/blas"
+	"gonum.org/v1/gonum/blas/blas32"
 	"gonum.org/v1/gonum/mat"
 )
 
@@ -86,12 +88,24 @@ func benchNaiveF32(n int) time.Duration {
 	return time.Since(start)
 }
 
-func benchGonum(n int) time.Duration {
+func benchGonumF64(n int) time.Duration {
 	a := mat.NewDense(n, n, randMatrixF64(n))
 	b := mat.NewDense(n, n, randMatrixF64(n))
 	c := mat.NewDense(n, n, nil)
 	start := time.Now()
 	c.Mul(a, b)
+	return time.Since(start)
+}
+
+// benchGonumF32 uses gonum's lower-level blas32.Gemm (a real Sgemm-style
+// call), since mat.Dense is float64-only -- there is no float32 Dense type
+// in current gonum.
+func benchGonumF32(n int) time.Duration {
+	a := blas32.General{Rows: n, Cols: n, Stride: n, Data: randMatrixF32(n)}
+	b := blas32.General{Rows: n, Cols: n, Stride: n, Data: randMatrixF32(n)}
+	c := blas32.General{Rows: n, Cols: n, Stride: n, Data: make([]float32, n*n)}
+	start := time.Now()
+	blas32.Gemm(blas.NoTrans, blas.NoTrans, 1, a, b, 0, c)
 	return time.Since(start)
 }
 
@@ -107,9 +121,13 @@ func main() {
 	}
 
 	fmt.Println()
-	fmt.Println("=== gonum mat.Dense.Mul (float64) ===")
+	fmt.Println("=== gonum BLAS (mat.Dense.Mul for f64, blas32.Gemm for f32) ===")
 	for _, n := range []int{500, 1000, 2000, 4096} {
-		d := benchGonum(n)
+		d := benchGonumF64(n)
 		fmt.Printf("gonum f64  n=%-5d  %10s  %8.3f GFLOP/s\n", n, d.Round(time.Millisecond), gflops(n, d))
+	}
+	for _, n := range []int{500, 1000, 2000, 4096} {
+		d := benchGonumF32(n)
+		fmt.Printf("gonum f32  n=%-5d  %10s  %8.3f GFLOP/s\n", n, d.Round(time.Millisecond), gflops(n, d))
 	}
 }
