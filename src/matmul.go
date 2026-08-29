@@ -131,16 +131,16 @@ func main() {
 		fmt.Printf("gonum f32  n=%-5d  %10s  %8.3f GFLOP/s\n", n, d.Round(time.Millisecond), gflops(n, d))
 	}
 
-	if accelerateAvailable {
+	if vendorBLASAvailable {
 		fmt.Println()
-		fmt.Println("=== Accelerate (vendor BLAS via cgo) ===")
+		fmt.Println("=== vendor BLAS via cgo (Accelerate on macOS, OpenBLAS on Linux) ===")
 		for _, n := range []int{500, 1000, 2000, 4096, 8192} {
-			d := benchAccelerateF64(n)
-			fmt.Printf("accel f64  n=%-5d  %10s  %8.3f GFLOP/s\n", n, d.Round(time.Millisecond), gflops(n, d))
+			d := benchVendorBLASF64(n)
+			fmt.Printf("blas  f64  n=%-5d  %10s  %8.3f GFLOP/s\n", n, d.Round(time.Millisecond), gflops(n, d))
 		}
 		for _, n := range []int{500, 1000, 2000, 4096, 8192} {
-			d := benchAccelerateF32(n)
-			fmt.Printf("accel f32  n=%-5d  %10s  %8.3f GFLOP/s\n", n, d.Round(time.Millisecond), gflops(n, d))
+			d := benchVendorBLASF32(n)
+			fmt.Printf("blas  f32  n=%-5d  %10s  %8.3f GFLOP/s\n", n, d.Round(time.Millisecond), gflops(n, d))
 		}
 	}
 

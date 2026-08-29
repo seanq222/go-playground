@@ -1,4 +1,4 @@
-//go:build darwin
+//go:build darwin && cgo
 
 // GPU matmul via Metal Performance Shaders (MPSMatrixMultiplication), the
 // same tuned kernel Julia's Metal.jl and PyTorch's MPS backend go through

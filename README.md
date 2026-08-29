@@ -16,25 +16,35 @@ Go has no built-in BLAS, so it compares:
   (float32, via `Gemm`) -- a pure-Go BLAS implementation with
   assembly-optimized, multi-threaded kernels for amd64/arm64. Not as fast
   as a tuned vendor BLAS.
-- **accelerate** (macOS only): [`gonum.org/v1/netlib/blas/netlib`](https://pkg.go.dev/gonum.org/v1/netlib/blas/netlib),
-  a cgo wrapper around any CBLAS-compatible C library, linked here against
-  macOS's built-in Accelerate framework -- no separate OpenBLAS install
-  needed. This is real vendor-tuned BLAS, the closest Go equivalent to what
-  Julia/NumPy/PyTorch get from OpenBLAS/MKL/Accelerate. On an M3 Max this
-  is ~10x gonum's throughput for float64 and ~30-40x for float32 (likely
-  hitting the AMX matrix coprocessor).
+- **vendor BLAS** (macOS/Linux, requires cgo): [`gonum.org/v1/netlib/blas/netlib`](https://pkg.go.dev/gonum.org/v1/netlib/blas/netlib),
+  a cgo wrapper around any CBLAS-compatible C library. This is real
+  vendor-tuned BLAS, the closest Go equivalent to what
+  Julia/NumPy/PyTorch get from OpenBLAS/MKL/Accelerate.
+  - On **macOS**: linked against the built-in Accelerate framework, no
+    install needed. ~10x gonum's throughput for float64 and ~30-40x for
+    float32 on an M3 Max (likely hitting the AMX matrix coprocessor).
+  - On **Linux**: linked against a real OpenBLAS build. Not the system
+    package (would need root/apt) -- built from source into
+    `~/openblas` with `NOFORTRAN=1 NO_LAPACK=1` (BLAS only, no Fortran
+    compiler needed). Deliberately *not* the same `.so` Julia uses on
+    that machine: Julia's bundled OpenBLAS is an **ILP64** build
+    (exports `cblas_dgemm64_`, 64-bit integer args), while gonum's
+    netlib wrapper expects the standard **LP64** interface (plain
+    `cblas_dgemm`, 32-bit int args) -- those calling conventions aren't
+    ABI-compatible, so a from-source LP64 build was needed instead. Same
+    OpenBLAS version (0.3.29) either way.
 
 ```
 go run src/matmul.go
 
-# on macOS, to include the Accelerate-backed benchmarks:
+# on macOS, to include the vendor-BLAS benchmarks:
 CGO_LDFLAGS="-framework Accelerate" go run ./src
-```
 
-On Linux, the same `gonum.org/v1/netlib/blas/netlib` package can link
-against a real OpenBLAS install instead
-(`CGO_LDFLAGS="-L/path/to/openblas -lopenblas"`) -- not wired up here yet
-since this Mac has no OpenBLAS installed to test against.
+# on Linux, against a from-source OpenBLAS install:
+CGO_LDFLAGS="-L$HOME/openblas/lib -lopenblas" \
+  LD_LIBRARY_PATH="$HOME/openblas/lib" \
+  go run ./src
+```
 
 - **mps** (macOS only): GPU matmul via
   [`MPSMatrixMultiplication`](https://developer.apple.com/documentation/metalperformanceshaders/mpsmatrixmultiplication)
