@@ -143,4 +143,6 @@ func main() {
 			fmt.Printf("accel f32  n=%-5d  %10s  %8.3f GFLOP/s\n", n, d.Round(time.Millisecond), gflops(n, d))
 		}
 	}
+
+	runMetalBenchmarks()
 }

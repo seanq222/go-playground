@@ -35,3 +35,19 @@ On Linux, the same `gonum.org/v1/netlib/blas/netlib` package can link
 against a real OpenBLAS install instead
 (`CGO_LDFLAGS="-L/path/to/openblas -lopenblas"`) -- not wired up here yet
 since this Mac has no OpenBLAS installed to test against.
+
+- **mps** (macOS only): GPU matmul via
+  [`MPSMatrixMultiplication`](https://developer.apple.com/documentation/metalperformanceshaders/mpsmatrixmultiplication)
+  (Metal Performance Shaders) -- the same tuned kernel Julia's `Metal.jl`
+  and PyTorch's MPS backend go through, not a hand-written compute
+  shader. No Go Metal binding is mature/stable enough yet to depend on, so
+  this is a small self-contained cgo + Objective-C bridge
+  ([`metal_matmul_darwin.m`](src/metal_matmul_darwin.m)), the same pattern
+  as the Accelerate benchmark above. Only reported number is GPU kernel
+  execution time (excludes allocation/upload/readback). On an M3 Max this
+  reaches ~10 TFLOP/s at n=8192 -- well beyond Accelerate's CPU/AMX
+  numbers, as expected for GPU vs. CPU.
+
+```
+CGO_LDFLAGS="-framework Accelerate -framework Metal -framework MetalPerformanceShaders -framework Foundation" go run ./src
+```
