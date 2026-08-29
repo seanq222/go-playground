@@ -46,6 +46,12 @@ CGO_LDFLAGS="-L$HOME/openblas/lib -lopenblas" \
   go run ./src
 ```
 
+On asymmetric-core Linux machines (e.g. spark's Cortex-X925/A725 hybrid
+design), also set `OPENBLAS_NUM_THREADS` to the number of *fast* cores
+only -- OpenBLAS's default of using every detected core measurably hurts
+throughput there (30-40% slower) since the slow efficiency cores become
+stragglers. See [`RESULTS.md`](RESULTS.md) for the numbers.
+
 - **mps** (macOS only): GPU matmul via
   [`MPSMatrixMultiplication`](https://developer.apple.com/documentation/metalperformanceshaders/mpsmatrixmultiplication)
   (Metal Performance Shaders) -- the same tuned kernel Julia's `Metal.jl`
